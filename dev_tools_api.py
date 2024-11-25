@@ -1,33 +1,26 @@
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 app = FastAPI()
 
-# Middleware for RapidAPI Key Validation
-@app.middleware("http")
-async def validate_rapidapi_key(request: Request, call_next):
-    """
-    Middleware to check the x-rapidapi-key in the request header.
-    """
-    rapidapi_key = "your-actual-rapidapi-key-here"
-    request_key = request.headers.get("x-rapidapi-key")
+# Proxy secret for validation (this is provided by RapidAPI)
+RAPIDAPI_PROXY_SECRET = "your-rapidapi-proxy-secret"  # Replace with your actual secret
 
-    if request_key != rapidapi_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-
-    response = await call_next(request)
-    return response
+# Function to check if request is from RapidAPI
+def check_rapidapi_auth(request: Request):
+    # Get the x-rapidapi-proxy-secret header from the request
+    proxy_secret = request.headers.get("x-rapidapi-proxy-secret")
+    if proxy_secret != RAPIDAPI_PROXY_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid API key or missing proxy secret.")
 
 # Unit Conversion Enhancements
 @app.get("/convert/units")
-def convert_units(value: float, from_unit: str, to_unit: str):
-    """
-    Converts the given value from one unit to another.
-    Handles length, weight, temperature, speed, volume, and area conversions.
-    """
+async def convert_units(value: float, from_unit: str, to_unit: str, request: Request):
+    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
+
     conversions = {
         ("meters", "feet"): 3.28084,
         ("feet", "meters"): 1 / 3.28084,
@@ -48,10 +41,9 @@ def convert_units(value: float, from_unit: str, to_unit: str):
 
 # Enhanced Text Processing
 @app.get("/process/text/details")
-def text_details(text: str):
-    """
-    Provides detailed text analysis: length, word count, alphanumeric count, and punctuation count.
-    """
+async def text_details(text: str, request: Request):
+    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
+
     alphanumeric_count = sum(c.isalnum() for c in text)
     punctuation_count = sum(not c.isalnum() and not c.isspace() for c in text)
     whitespace_count = sum(c.isspace() for c in text)
@@ -65,11 +57,9 @@ def text_details(text: str):
 
 # Enhanced Math Utilities
 @app.get("/math/trigonometry")
-def trigonometry(function: str, angle: float, precision: Optional[int] = 4):
-    """
-    Returns the result of trigonometric functions for a given angle in degrees.
-    Supported functions: sin, cos, tan, sec, csc, cot.
-    """
+async def trigonometry(function: str, angle: float, precision: Optional[int] = 4, request: Request):
+    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
+
     radian = math.radians(angle)
     functions = {
         "sin": math.sin(radian),
@@ -89,10 +79,9 @@ def trigonometry(function: str, angle: float, precision: Optional[int] = 4):
 
 # Date and Time Utilities
 @app.get("/datetime/difference")
-def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d"):
-    """
-    Calculates the difference in days between two dates.
-    """
+async def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d", request: Request):
+    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
+
     try:
         d1 = datetime.strptime(date1, format)
         d2 = datetime.strptime(date2, format)
@@ -102,10 +91,9 @@ def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d"):
         return {"error": str(e)}
 
 @app.get("/datetime/convert_timezone")
-def convert_timezone(date_string: str, from_timezone: str, to_timezone: str):
-    """
-    Converts the input datetime from one timezone to another.
-    """
+async def convert_timezone(date_string: str, from_timezone: str, to_timezone: str, request: Request):
+    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
+
     try:
         from pytz import timezone
         from_zone = timezone(from_timezone)
