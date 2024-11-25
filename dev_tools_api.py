@@ -6,21 +6,20 @@ from typing import Optional
 
 app = FastAPI()
 
-# Proxy secret for validation (this is provided by RapidAPI)
-RAPIDAPI_PROXY_SECRET = "your-rapidapi-proxy-secret"  # Replace with your actual secret
-
-# Function to check if request is from RapidAPI
-def check_rapidapi_auth(request: Request):
-    # Get the x-rapidapi-proxy-secret header from the request
-    proxy_secret = request.headers.get("x-rapidapi-proxy-secret")
-    if proxy_secret != RAPIDAPI_PROXY_SECRET:
-        raise HTTPException(status_code=403, detail="Forbidden: Invalid API key or missing proxy secret.")
+# Middleware for checking RapidAPI key
+@app.middleware("http")
+async def verify_rapidapi_key(request: Request):
+    api_key = request.headers.get('x-rapidapi-key')
+    if api_key is None:
+        raise HTTPException(status_code=400, detail="API key is missing.")
 
 # Unit Conversion Enhancements
 @app.get("/convert/units")
-async def convert_units(value: float, from_unit: str, to_unit: str, request: Request):
-    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
-
+def convert_units(value: float, from_unit: str, to_unit: str):
+    """
+    Converts the given value from one unit to another.
+    Handles length, weight, temperature, speed, volume, and area conversions.
+    """
     conversions = {
         ("meters", "feet"): 3.28084,
         ("feet", "meters"): 1 / 3.28084,
@@ -39,11 +38,13 @@ async def convert_units(value: float, from_unit: str, to_unit: str, request: Req
         return {"result": value * conversions[key]}
     return {"error": f"Conversion from {from_unit} to {to_unit} is not supported."}
 
+
 # Enhanced Text Processing
 @app.get("/process/text/details")
-async def text_details(text: str, request: Request):
-    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
-
+def text_details(text: str):
+    """
+    Provides detailed text analysis: length, word count, alphanumeric count, and punctuation count.
+    """
     alphanumeric_count = sum(c.isalnum() for c in text)
     punctuation_count = sum(not c.isalnum() and not c.isspace() for c in text)
     whitespace_count = sum(c.isspace() for c in text)
@@ -55,11 +56,14 @@ async def text_details(text: str, request: Request):
         "whitespace_count": whitespace_count,
     }
 
+
 # Enhanced Math Utilities
 @app.get("/math/trigonometry")
-async def trigonometry(function: str, angle: float, precision: Optional[int] = 4, request: Request):
-    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
-
+def trigonometry(function: str, angle: float, precision: Optional[int] = 4):
+    """
+    Returns the result of trigonometric functions for a given angle in degrees.
+    Supported functions: sin, cos, tan, sec, csc, cot.
+    """
     radian = math.radians(angle)
     functions = {
         "sin": math.sin(radian),
@@ -77,11 +81,13 @@ async def trigonometry(function: str, angle: float, precision: Optional[int] = 4
         return {"error": f"Cannot compute '{function}' for angle {angle}."}
     return {"result": round(result, precision)}
 
+
 # Date and Time Utilities
 @app.get("/datetime/difference")
-async def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d", request: Request):
-    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
-
+def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d"):
+    """
+    Calculates the difference in days between two dates.
+    """
     try:
         d1 = datetime.strptime(date1, format)
         d2 = datetime.strptime(date2, format)
@@ -90,10 +96,12 @@ async def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d", requ
     except ValueError as e:
         return {"error": str(e)}
 
-@app.get("/datetime/convert_timezone")
-async def convert_timezone(date_string: str, from_timezone: str, to_timezone: str, request: Request):
-    check_rapidapi_auth(request)  # Ensure the request is coming from RapidAPI
 
+@app.get("/datetime/convert_timezone")
+def convert_timezone(date_string: str, from_timezone: str, to_timezone: str):
+    """
+    Converts the input datetime from one timezone to another.
+    """
     try:
         from pytz import timezone
         from_zone = timezone(from_timezone)
