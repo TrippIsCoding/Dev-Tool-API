@@ -1,24 +1,20 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, Response, HTTPException
 from pydantic import BaseModel
 import math
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import Request, Response
-from fastapi.middleware import BaseHTTPMiddleware
+from starlette.middleware.base import BaseMiddleware
 
-app = FastAPI()
-
-class APIKeyMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        api_key = request.headers.get('x-rapidapi-key')
-        
-        if api_key != 'your-expected-api-key':
-            return Response("Unauthorized", status_code=401)
-        
+class CustomMiddleware(BaseMiddleware):
+    async def dispatch(self, request, call_next):
         response = await call_next(request)
         return response
 
-app.add_middleware(APIKeyMiddleware)
+app = FastAPI()
+
+# Add the middleware
+app.add_middleware(CustomMiddleware)
+
 
 
 # Unit Conversion Enhancements
