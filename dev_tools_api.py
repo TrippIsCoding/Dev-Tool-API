@@ -3,15 +3,23 @@ from pydantic import BaseModel
 import math
 from datetime import datetime, timedelta
 from typing import Optional
+from fastapi import Request, Response
+from fastapi.middleware.base import BaseHTTPMiddleware
 
 app = FastAPI()
 
-# Middleware for checking RapidAPI key
-@app.middleware("http")
-async def verify_rapidapi_key(request: Request):
-    api_key = request.headers.get('x-rapidapi-key')
-    if api_key is None:
-        raise HTTPException(status_code=400, detail="API key is missing.")
+class APIKeyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        api_key = request.headers.get('x-rapidapi-key')
+        
+        if api_key != 'your-expected-api-key':
+            return Response("Unauthorized", status_code=401)
+        
+        response = await call_next(request)
+        return response
+
+app.add_middleware(APIKeyMiddleware)
+
 
 # Unit Conversion Enhancements
 @app.get("/convert/units")
