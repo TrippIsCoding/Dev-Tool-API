@@ -4,7 +4,7 @@ import math
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import Request, Response
-from fastapi.middleware.base import BaseHTTPMiddleware
+from fastapi.middleware import BaseHTTPMiddleware
 
 app = FastAPI()
 
