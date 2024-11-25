@@ -3,9 +3,9 @@ from pydantic import BaseModel
 import math
 from datetime import datetime, timedelta
 from typing import Optional
-from starlette.middleware.base import BaseMiddleware
+from starlette.middleware import Middleware
 
-class CustomMiddleware(BaseMiddleware):
+class CustomMiddleware(Middleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
         return response
