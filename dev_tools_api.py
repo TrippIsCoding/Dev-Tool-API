@@ -19,23 +19,54 @@ app.add_middleware(CustomMiddleware)
 # Unit Conversion Enhancements
 @app.get("/convert/units")
 def convert_units(value: float, from_unit: str, to_unit: str):
-    conversions = {
-        ("meters", "feet"): 3.28084,
-        ("feet", "meters"): 1 / 3.28084,
-        ("kilometers", "miles"): 1 / 1.609,
-        ("miles", "kilometers"): 1.609,
-        ("inches", "centimeters"): 2.54,
-        ("centimeters", "inches"): 1 / 2.54,
-        ("liters", "gallons"): 1 / 3.785,
-        ("gallons", "liters"): 3.785,
-        ("square meters", "square feet"): 10.764,
-        ("square feet", "square meters"): 1 / 10.764,
-    }
+  conversions = {
+    # Length Conversions
+    ("meters", "feet"): 3.28084,
+    ("feet", "meters"): 1 / 3.28084,
+    ("kilometers", "miles"): 1 / 1.609,
+    ("miles", "kilometers"): 1.609,
+    ("inches", "centimeters"): 2.54,
+    ("centimeters", "inches"): 1 / 2.54,
+    ("yards", "meters"): 0.9144,
+    ("meters", "yards"): 1 / 0.9144,
+    ("miles", "yards"): 1760,
+    ("yards", "miles"): 1 / 1760,
 
-    key = (from_unit.lower(), to_unit.lower())
-    if key in conversions:
-        return {"result": value * conversions[key]}
-    return {"error": f"Conversion from {from_unit} to {to_unit} is not supported."}
+    # Area Conversions
+    ("square meters", "square feet"): 10.764,
+    ("square feet", "square meters"): 1 / 10.764,
+    ("acres", "square meters"): 4046.86,
+    ("square meters", "acres"): 1 / 4046.86,
+    ("hectares", "square meters"): 10000,
+    ("square meters", "hectares"): 1 / 10000,
+
+    # Volume Conversions
+    ("liters", "gallons"): 1 / 3.785,
+    ("gallons", "liters"): 3.785,
+    ("milliliters", "liters"): 0.001,
+    ("liters", "milliliters"): 1000,
+    ("cubic meters", "liters"): 1000,
+    ("liters", "cubic meters"): 1 / 1000,
+
+    # Weight/Mass Conversions
+    ("kilograms", "pounds"): 2.20462,
+    ("pounds", "kilograms"): 1 / 2.20462,
+    ("grams", "ounces"): 1 / 28.3495,
+    ("ounces", "grams"): 28.3495,
+    ("tons", "kilograms"): 907.184,
+    ("kilograms", "tons"): 1 / 907.184,
+
+    # Speed Conversions
+    ("kilometers/hour", "miles/hour"): 1 / 1.609,
+    ("miles/hour", "kilometers/hour"): 1.609,
+    ("meters/second", "kilometers/hour"): 3.6,
+    ("kilometers/hour", "meters/second"): 1 / 3.6,
+  }
+
+  key = (from_unit.lower(), to_unit.lower())
+  if key in conversions:
+      return {"result": value * conversions[key]}
+  return {"error": f"Conversion from {from_unit} to {to_unit} is not supported."}
 
 # Enhanced Text Processing
 @app.get("/process/text/details")
