@@ -1,10 +1,25 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 app = FastAPI()
+
+# Middleware for RapidAPI Key Validation
+@app.middleware("http")
+async def validate_rapidapi_key(request: Request, call_next):
+    """
+    Middleware to check the x-rapidapi-key in the request header.
+    """
+    rapidapi_key = "your-actual-rapidapi-key-here"
+    request_key = request.headers.get("x-rapidapi-key")
+
+    if request_key != rapidapi_key:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    response = await call_next(request)
+    return response
 
 # Unit Conversion Enhancements
 @app.get("/convert/units")
@@ -31,7 +46,6 @@ def convert_units(value: float, from_unit: str, to_unit: str):
         return {"result": value * conversions[key]}
     return {"error": f"Conversion from {from_unit} to {to_unit} is not supported."}
 
-
 # Enhanced Text Processing
 @app.get("/process/text/details")
 def text_details(text: str):
@@ -48,7 +62,6 @@ def text_details(text: str):
         "punctuation_count": punctuation_count,
         "whitespace_count": whitespace_count,
     }
-
 
 # Enhanced Math Utilities
 @app.get("/math/trigonometry")
@@ -74,7 +87,6 @@ def trigonometry(function: str, angle: float, precision: Optional[int] = 4):
         return {"error": f"Cannot compute '{function}' for angle {angle}."}
     return {"result": round(result, precision)}
 
-
 # Date and Time Utilities
 @app.get("/datetime/difference")
 def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d"):
@@ -88,7 +100,6 @@ def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d"):
         return {"days_difference": abs(delta.days)}
     except ValueError as e:
         return {"error": str(e)}
-
 
 @app.get("/datetime/convert_timezone")
 def convert_timezone(date_string: str, from_timezone: str, to_timezone: str):
@@ -105,7 +116,6 @@ def convert_timezone(date_string: str, from_timezone: str, to_timezone: str):
         return {"converted_date": converted_date.strftime("%Y-%m-%d %H:%M:%S")}
     except Exception as e:
         return {"error": str(e)}
-
 
 if __name__ == "__main__":
     import uvicorn
