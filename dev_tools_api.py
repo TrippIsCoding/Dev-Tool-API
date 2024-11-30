@@ -63,6 +63,10 @@ async def api_key_and_rate_limiting_middleware(request: Request, call_next):
         )
 
     # Rate Limiting
+    # Ensure there's a default empty list for new `client_ip`
+    if client_ip not in rate_limit_data:
+        rate_limit_data[client_ip] = []
+
     timestamps = rate_limit_data[client_ip]
     timestamps = [ts for ts in timestamps if now - ts < timedelta(seconds=RATE_LIMIT_WINDOW)]
     rate_limit_data[client_ip] = timestamps
@@ -79,6 +83,7 @@ async def api_key_and_rate_limiting_middleware(request: Request, call_next):
     # Log response
     logging.info(f"Response to {client_ip} for {request.url.path}: {response.status_code}")
     return response
+
 
 # Exception Handlers
 @app.exception_handler(HTTPException)
