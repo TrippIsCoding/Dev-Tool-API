@@ -22,34 +22,6 @@ rate_limit_data = TTLCache(maxsize=1000, ttl=RATE_LIMIT_WINDOW)
 # Setup logging
 logging.basicConfig(filename="api_logs.log", level=logging.INFO, format="%(asctime)s - %(message)s")
 
-# Currency Conversion Cache (TTL = 1 hour)
-exchange_rate_cache = TTLCache(maxsize=1, ttl=3600)
-
-def get_exchange_rate(from_currency, to_currency):
-    """
-    Fetch live exchange rates or use cached rates if available.
-    """
-    if exchange_rate_cache.get("rates"):
-        rates = exchange_rate_cache["rates"]
-    else:
-        url = f"https://v6.exchangerate-api.com/v6/your_exchange_api_key/latest/{from_currency}"
-        response = requests.get(url)
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch exchange rates. Please try again later."
-            )
-        data = response.json()
-        rates = data.get("conversion_rates", {})
-        exchange_rate_cache["rates"] = rates
-
-    if to_currency not in rates:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Conversion rate for {to_currency} not found."
-        )
-    return rates[to_currency]
-
 @app.middleware("http")
 async def api_key_and_rate_limiting_middleware(request: Request, call_next):
     client_ip = request.client.host
@@ -110,22 +82,41 @@ async def general_exception_handler(request, exc):
 @app.get("/convert/currency")
 def convert_currency(amount: float, from_currency: str, to_currency: str):
     """
-    Convert an amount from one currency to another using live exchange rates.
+    Convert an amount from one currency to another using predefined exchange rates.
     """
-    try:
-        rate = get_exchange_rate(from_currency.upper(), to_currency.upper())
-        converted_amount = amount * rate
-        return {
-            "amount": amount,
-            "from_currency": from_currency,
-            "to_currency": to_currency,
-            "converted_amount": round(converted_amount, 2),
-            "rate": rate,
-        }
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        return {"error": str(e)}
+    # Predefined exchange rates
+    currency_conversions = {
+        ("USD", "EUR"): 0.85,
+        ("EUR", "USD"): 1 / 0.85,
+        ("USD", "GBP"): 0.75,
+        ("GBP", "USD"): 1 / 0.75,
+        ("EUR", "GBP"): 0.88,
+        ("GBP", "EUR"): 1 / 0.88,
+        # Add more conversions as needed
+    }
+
+    # Normalize input to uppercase
+    from_currency = from_currency.upper()
+    to_currency = to_currency.upper()
+
+    # Check if the conversion exists
+    key = (from_currency, to_currency)
+    if key not in currency_conversions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Conversion from {from_currency} to {to_currency} is not supported."
+        )
+    
+    # Perform conversion
+    rate = currency_conversions[key]
+    converted_amount = amount * rate
+    return {
+        "amount": amount,
+        "from_currency": from_currency,
+        "to_currency": to_currency,
+        "converted_amount": round(converted_amount, 2),
+        "rate": rate,
+    }
 
 @app.get("/convert/units")
 def convert_units(value: float, from_unit: str, to_unit: str):
