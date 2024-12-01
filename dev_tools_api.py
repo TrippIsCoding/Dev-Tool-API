@@ -92,7 +92,6 @@ def convert_currency(amount: float, from_currency: str, to_currency: str):
         ("GBP", "USD"): 1 / 0.75,
         ("EUR", "GBP"): 0.88,
         ("GBP", "EUR"): 1 / 0.88,
-        # Add more conversions as needed
     }
 
     # Normalize input to uppercase
@@ -207,28 +206,47 @@ def trigonometry(function: str, angle: float, precision: Optional[int] = 4):
         return {"error": f"Cannot compute '{function}' for angle {angle}."}
     return {"result": round(result, precision)}
 
+from datetime import datetime
+from pytz import timezone, UnknownTimeZoneError
+
 @app.get("/datetime/difference")
 def date_difference(date1: str, date2: str, format: str = "%Y-%m-%d"):
     try:
+        # Parse dates using the provided format
         d1 = datetime.strptime(date1, format)
         d2 = datetime.strptime(date2, format)
         delta = d2 - d1
         return {"days_difference": abs(delta.days)}
     except ValueError as e:
-        return {"error": str(e)}
+        # Handle invalid date format or other parsing issues
+        return {"error": f"Invalid date or format: {str(e)}"}
+    except Exception as e:
+        # Catch any other unexpected errors
+        return {"error": f"An unexpected error occurred: {str(e)}"}
 
 @app.get("/datetime/convert_timezone")
 def convert_timezone(date_string: str, from_timezone: str, to_timezone: str):
     try:
+        # Parse the timezones
         from_zone = timezone(from_timezone)
         to_zone = timezone(to_timezone)
+        
+        # Parse the date string
         date_obj = datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
+        
+        # Localize the date to the 'from' timezone and convert to the 'to' timezone
         localized_date = from_zone.localize(date_obj)
         converted_date = localized_date.astimezone(to_zone)
+        
         return {"converted_date": converted_date.strftime("%Y-%m-%d %H:%M:%S")}
     except UnknownTimeZoneError:
-        return {"error": "Invalid timezone provided."}
+        # Handle invalid timezone input
+        return {"error": "Invalid timezone provided. Please provide a valid timezone name (e.g., 'UTC', 'America/New_York')."}
+    except ValueError as e:
+        # Handle invalid date string format
+        return {"error": f"Invalid date string format. Expected format is '%Y-%m-%d %H:%M:%S'. Error: {str(e)}"}
     except Exception as e:
+        # Catch any other unexpected errors
         return {"error": f"Failed to convert timezone: {str(e)}"}
 
 # Start the server if running this script
