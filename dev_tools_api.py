@@ -85,6 +85,7 @@ def convert_currency(amount: float, from_currency: str, to_currency: str):
     Convert an amount from one currency to another using predefined exchange rates.
     """
     # Predefined exchange rates
+    # I might make these live exchange rates in the future
     currency_conversions = {
         ("USD", "EUR"): 0.85,
         ("EUR", "USD"): 1 / 0.85,
